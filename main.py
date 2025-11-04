@@ -8,7 +8,16 @@ import random
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(
+    title="Airtable Server API",
+    description="Complete CRUD API for Airtable integration",
+    version="1.0.0",
+    servers=[
+        {"url": "https://drop2.fullpotential.ai", "description": "Production server"},
+        {"url": "http://drop2.fullpotential.ai", "description": "Production server (HTTP)"},
+        {"url": "http://164.92.86.253:8000", "description": "Direct IP access"}
+    ]
+)
 
 # Airtable configuration
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")
@@ -22,7 +31,21 @@ headers = {
 
 @app.get("/")
 def root():
-    return {"message": "Airtable Server Running"}
+    return {
+        "message": "Airtable Server Running",
+        "domain": "drop2.fullpotential.ai",
+        "endpoints": {
+            "sprints": "/sprints",
+            "cells": "/cells",
+            "proof": "/proof",
+            "heartbeats": "/heartbeats",
+            "webhooks": ["/webhook", "/proof-webhook", "/heartbeat-webhook"]
+        },
+        "access": [
+            "https://drop2.fullpotential.ai",
+            "http://drop2.fullpotential.ai"
+        ]
+    }
 
 @app.post("/write")
 def write_sample_data():
