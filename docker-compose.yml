@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  airtable-server:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - AIRTABLE_API_KEY=${AIRTABLE_API_KEY}
+      - BASE_ID=${BASE_ID}
+    restart: unless-stopped
