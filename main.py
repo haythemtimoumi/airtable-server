@@ -138,19 +138,214 @@ async def webhook_handler(request: Request):
         print(f"❌ Webhook error: {str(e)}")
         return {"error": str(e)}
 
-@app.post("/proof")
+@app.post("/proof-webhook")
 async def proof_webhook(request: Request):
     """Handle proof webhooks"""
     payload = await request.json()
     print(f"🎯 Proof webhook: {json.dumps(payload, indent=2)}")
     return {"status": "proof received", "data": payload}
 
-@app.post("/heartbeat")
+@app.post("/heartbeat-webhook")
 async def heartbeat_webhook(request: Request):
     """Handle heartbeat webhooks"""
     payload = await request.json()
     print(f"💓 Heartbeat webhook: {json.dumps(payload, indent=2)}")
     return {"status": "heartbeat received", "data": payload}
+
+# Individual table endpoints
+@app.get("/sprints")
+def get_sprints():
+    """Get all sprints"""
+    try:
+        response = requests.get(f"{BASE_URL}/Sprints", headers=headers)
+        print(f"📖 Read Sprints: {len(response.json().get('records', []))} records")
+        return response.json()
+    except Exception as e:
+        print(f"❌ Read Sprints error: {str(e)}")
+        return {"error": str(e)}
+
+@app.post("/sprints")
+async def create_sprint(request: Request):
+    """Create new sprint"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"fields": data}]}
+        response = requests.post(f"{BASE_URL}/Sprints", headers=headers, json=payload)
+        print(f"✅ Created Sprint: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Create Sprint error: {str(e)}")
+        return {"error": str(e)}
+
+@app.get("/cells")
+def get_cells():
+    """Get all cells"""
+    try:
+        response = requests.get(f"{BASE_URL}/Cells", headers=headers)
+        print(f"📖 Read Cells: {len(response.json().get('records', []))} records")
+        return response.json()
+    except Exception as e:
+        print(f"❌ Read Cells error: {str(e)}")
+        return {"error": str(e)}
+
+@app.post("/cells")
+async def create_cell(request: Request):
+    """Create new cell"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"fields": data}]}
+        response = requests.post(f"{BASE_URL}/Cells", headers=headers, json=payload)
+        print(f"✅ Created Cell: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Create Cell error: {str(e)}")
+        return {"error": str(e)}
+
+@app.get("/proof")
+def get_proof():
+    """Get all proof records"""
+    try:
+        response = requests.get(f"{BASE_URL}/Proof", headers=headers)
+        print(f"📖 Read Proof: {len(response.json().get('records', []))} records")
+        return response.json()
+    except Exception as e:
+        print(f"❌ Read Proof error: {str(e)}")
+        return {"error": str(e)}
+
+@app.post("/proof")
+async def create_proof_record(request: Request):
+    """Create new proof record"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"fields": data}]}
+        response = requests.post(f"{BASE_URL}/Proof", headers=headers, json=payload)
+        print(f"✅ Created Proof: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Create Proof error: {str(e)}")
+        return {"error": str(e)}
+
+@app.get("/heartbeats")
+def get_heartbeats():
+    """Get all heartbeats"""
+    try:
+        response = requests.get(f"{BASE_URL}/Heartbeats", headers=headers)
+        print(f"📖 Read Heartbeats: {len(response.json().get('records', []))} records")
+        return response.json()
+    except Exception as e:
+        print(f"❌ Read Heartbeats error: {str(e)}")
+        return {"error": str(e)}
+
+@app.post("/heartbeats")
+async def create_heartbeat(request: Request):
+    """Create new heartbeat"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"fields": data}]}
+        response = requests.post(f"{BASE_URL}/Heartbeats", headers=headers, json=payload)
+        print(f"✅ Created Heartbeat: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Create Heartbeat error: {str(e)}")
+        return {"error": str(e)}
+
+# UPDATE operations
+@app.put("/sprints/{record_id}")
+async def update_sprint(record_id: str, request: Request):
+    """Update sprint record"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"id": record_id, "fields": data}]}
+        response = requests.patch(f"{BASE_URL}/Sprints", headers=headers, json=payload)
+        print(f"✅ Updated Sprint {record_id}: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Update Sprint error: {str(e)}")
+        return {"error": str(e)}
+
+@app.put("/cells/{record_id}")
+async def update_cell(record_id: str, request: Request):
+    """Update cell record"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"id": record_id, "fields": data}]}
+        response = requests.patch(f"{BASE_URL}/Cells", headers=headers, json=payload)
+        print(f"✅ Updated Cell {record_id}: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Update Cell error: {str(e)}")
+        return {"error": str(e)}
+
+@app.put("/proof/{record_id}")
+async def update_proof(record_id: str, request: Request):
+    """Update proof record"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"id": record_id, "fields": data}]}
+        response = requests.patch(f"{BASE_URL}/Proof", headers=headers, json=payload)
+        print(f"✅ Updated Proof {record_id}: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Update Proof error: {str(e)}")
+        return {"error": str(e)}
+
+@app.put("/heartbeats/{record_id}")
+async def update_heartbeat(record_id: str, request: Request):
+    """Update heartbeat record"""
+    try:
+        data = await request.json()
+        payload = {"records": [{"id": record_id, "fields": data}]}
+        response = requests.patch(f"{BASE_URL}/Heartbeats", headers=headers, json=payload)
+        print(f"✅ Updated Heartbeat {record_id}: {response.status_code}")
+        return {"status": response.status_code, "data": response.json()}
+    except Exception as e:
+        print(f"❌ Update Heartbeat error: {str(e)}")
+        return {"error": str(e)}
+
+# DELETE operations
+@app.delete("/sprints/{record_id}")
+def delete_sprint(record_id: str):
+    """Delete sprint record"""
+    try:
+        response = requests.delete(f"{BASE_URL}/Sprints/{record_id}", headers=headers)
+        print(f"✅ Deleted Sprint {record_id}: {response.status_code}")
+        return {"status": response.status_code, "message": "Sprint deleted"}
+    except Exception as e:
+        print(f"❌ Delete Sprint error: {str(e)}")
+        return {"error": str(e)}
+
+@app.delete("/cells/{record_id}")
+def delete_cell(record_id: str):
+    """Delete cell record"""
+    try:
+        response = requests.delete(f"{BASE_URL}/Cells/{record_id}", headers=headers)
+        print(f"✅ Deleted Cell {record_id}: {response.status_code}")
+        return {"status": response.status_code, "message": "Cell deleted"}
+    except Exception as e:
+        print(f"❌ Delete Cell error: {str(e)}")
+        return {"error": str(e)}
+
+@app.delete("/proof/{record_id}")
+def delete_proof(record_id: str):
+    """Delete proof record"""
+    try:
+        response = requests.delete(f"{BASE_URL}/Proof/{record_id}", headers=headers)
+        print(f"✅ Deleted Proof {record_id}: {response.status_code}")
+        return {"status": response.status_code, "message": "Proof deleted"}
+    except Exception as e:
+        print(f"❌ Delete Proof error: {str(e)}")
+        return {"error": str(e)}
+
+@app.delete("/heartbeats/{record_id}")
+def delete_heartbeat(record_id: str):
+    """Delete heartbeat record"""
+    try:
+        response = requests.delete(f"{BASE_URL}/Heartbeats/{record_id}", headers=headers)
+        print(f"✅ Deleted Heartbeat {record_id}: {response.status_code}")
+        return {"status": response.status_code, "message": "Heartbeat deleted"}
+    except Exception as e:
+        print(f"❌ Delete Heartbeat error: {str(e)}")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
