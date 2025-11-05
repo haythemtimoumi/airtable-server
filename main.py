@@ -388,31 +388,41 @@ def generate_daily_digest():
         proofs = proof_response.json().get('records', [])
         heartbeats = heartbeats_response.json().get('records', [])
         
-        # Calculate metrics
-        total_droplets = len(cells)
+        # Filter records by today's date
+        sprints_today = [s for s in sprints if s.get('createdTime', '').startswith(today)]
+        proofs_today = [p for p in proofs if p.get('createdTime', '').startswith(today)]
+        heartbeats_today = [h for h in heartbeats if h.get('createdTime', '').startswith(today)]
+        
+        # Calculate daily metrics
+        total_droplets = len(cells)  # Current total cells
         active_droplets = len([c for c in cells if c.get('fields', {}).get('Health_Status') == 'OK'])
         uptime_percentage = (active_droplets / total_droplets * 100) if total_droplets > 0 else 0
         offline_cells = total_droplets - active_droplets
         
-        total_sprints = len(sprints)
-        completed_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') == 'Done'])
-        in_progress_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') in ['Active', 'Pending']])
+        # Daily sprint activity
+        total_sprints = len(sprints_today)  # Sprints created today
+        completed_sprints = len([s for s in sprints_today if s.get('fields', {}).get('Status') == 'Done'])
+        in_progress_sprints = len([s for s in sprints_today if s.get('fields', {}).get('Status') in ['Active', 'Pending']])
         
-        total_proofs = len(proofs)
-        verified_proofs = len([p for p in proofs if 'passed' in str(p.get('fields', {}).get('Result', '')).lower()])
-        failed_proofs = len([p for p in proofs if 'failed' in str(p.get('fields', {}).get('Result', '')).lower()])
+        # Daily proof activity
+        total_proofs = len(proofs_today)  # Proofs submitted today
+        verified_proofs = len([p for p in proofs_today if 'passed' in str(p.get('fields', {}).get('Result', '')).lower()])
+        failed_proofs = len([p for p in proofs_today if 'failed' in str(p.get('fields', {}).get('Result', '')).lower()])
         pending_proofs = total_proofs - verified_proofs - failed_proofs
         
-        # Calculate heartbeat averages
-        cpu_values = [h.get('fields', {}).get('CPU_Usage', 0) for h in heartbeats if h.get('fields', {}).get('CPU_Usage')]
-        ram_values = [h.get('fields', {}).get('RAM_Usage', 0) for h in heartbeats if h.get('fields', {}).get('RAM_Usage')]
+        # Calculate heartbeat averages from today only
+        cpu_values = [h.get('fields', {}).get('CPU_Usage', 0) for h in heartbeats_today if h.get('fields', {}).get('CPU_Usage')]
+        ram_values = [h.get('fields', {}).get('RAM_Usage', 0) for h in heartbeats_today if h.get('fields', {}).get('RAM_Usage')]
         
         average_cpu = sum(cpu_values) / len(cpu_values) if cpu_values else 0
         average_ram = sum(ram_values) / len(ram_values) if ram_values else 0
         
-        # Get last ping time
+        # Get last ping time from today's heartbeats
         last_ping_time = ""
-        if heartbeats:
+        if heartbeats_today:
+            timestamps = [h.get('createdTime', '') for h in heartbeats_today]
+            last_ping_time = max(timestamps) if timestamps else ""
+        elif heartbeats:  # Fallback to latest heartbeat if none today
             timestamps = [h.get('createdTime', '') for h in heartbeats]
             last_ping_time = max(timestamps) if timestamps else ""
         
@@ -455,13 +465,15 @@ def generate_daily_digest():
             "message": "Daily digest generated successfully",
             "data": response.json(),
             "summary": {
+                "date": today,
                 "total_droplets": total_droplets,
                 "active_droplets": active_droplets,
                 "uptime_percentage": f"{uptime_percentage:.2f}%",
-                "total_sprints": total_sprints,
-                "completed_sprints": completed_sprints,
-                "total_proofs": total_proofs,
-                "verified_proofs": verified_proofs
+                "sprints_created_today": total_sprints,
+                "sprints_completed_today": completed_sprints,
+                "proofs_submitted_today": total_proofs,
+                "proofs_verified_today": verified_proofs,
+                "heartbeats_today": len(heartbeats_today)
             }
         }
         
