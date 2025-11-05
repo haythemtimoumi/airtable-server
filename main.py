@@ -399,10 +399,18 @@ def generate_daily_digest():
         uptime_percentage = (active_droplets / total_droplets * 100) if total_droplets > 0 else 0
         offline_cells = total_droplets - active_droplets
         
-        # Daily sprint activity
-        total_sprints = len(sprints_today)  # Sprints created today
-        completed_sprints = len([s for s in sprints_today if s.get('fields', {}).get('Status') == 'Done'])
-        in_progress_sprints = len([s for s in sprints_today if s.get('fields', {}).get('Status') in ['Active', 'Pending']])
+        # Sprint activity - current status of all sprints + daily activity
+        new_sprints_today = len(sprints_today)  # New sprints created today
+        
+        # Current sprint status (all sprints)
+        all_completed_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') == 'Done'])
+        all_active_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') == 'Active'])
+        all_pending_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') == 'Pending'])
+        total_sprints = len(sprints)  # Total sprints in system
+        
+        # For daily digest, focus on current status
+        completed_sprints = all_completed_sprints
+        in_progress_sprints = all_active_sprints + all_pending_sprints
         
         # Daily proof activity
         total_proofs = len(proofs_today)  # Proofs submitted today
@@ -426,10 +434,13 @@ def generate_daily_digest():
             timestamps = [h.get('createdTime', '') for h in heartbeats]
             last_ping_time = max(timestamps) if timestamps else ""
         
-        # Generate warnings
+        # Generate warnings and daily summary
         offline_cell_ids = [c.get('fields', {}).get('Cell_ID', 'Unknown') for c in cells 
                            if c.get('fields', {}).get('Health_Status') != 'OK']
         warnings = f"Offline cells: {', '.join(offline_cell_ids)}" if offline_cell_ids else "All systems operational"
+        
+        # Daily activity summary
+        daily_summary = f"Today: {new_sprints_today} new sprints, {total_proofs} proofs submitted, {len(heartbeats_today)} heartbeats. Current: {completed_sprints} completed sprints, {all_active_sprints} active, {all_pending_sprints} pending."
         
         # Create digest record
         digest_data = {
@@ -440,8 +451,11 @@ def generate_daily_digest():
                     "Active_Droplets": active_droplets,
                     "Uptime_Percentage": round(uptime_percentage, 2),
                     "Offline_Cells": offline_cells,
+                    "New_Sprints_Today": new_sprints_today,
                     "Total_Sprints": total_sprints,
                     "Completed_Sprints": completed_sprints,
+                    "Active_Sprints": all_active_sprints,
+                    "Pending_Sprints": all_pending_sprints,
                     "In_Progress_Sprints": in_progress_sprints,
                     "Total_Proofs": total_proofs,
                     "Verified_Proofs": verified_proofs,
@@ -451,6 +465,7 @@ def generate_daily_digest():
                     "Average_RAM": round(average_ram, 2),
                     "Last_Ping_Time": last_ping_time,
                     "Warnings": warnings,
+                    "Daily_Summary": daily_summary,
                     "Timestamp": datetime.now().isoformat()
                 }
             }]
@@ -469,8 +484,11 @@ def generate_daily_digest():
                 "total_droplets": total_droplets,
                 "active_droplets": active_droplets,
                 "uptime_percentage": f"{uptime_percentage:.2f}%",
-                "sprints_created_today": total_sprints,
-                "sprints_completed_today": completed_sprints,
+                "new_sprints_today": new_sprints_today,
+                "total_sprints_in_system": total_sprints,
+                "completed_sprints": completed_sprints,
+                "active_sprints": all_active_sprints,
+                "pending_sprints": all_pending_sprints,
                 "proofs_submitted_today": total_proofs,
                 "proofs_verified_today": verified_proofs,
                 "heartbeats_today": len(heartbeats_today)
