@@ -469,6 +469,44 @@ def generate_daily_digest():
         print(f"❌ Daily digest error: {str(e)}")
         return {"error": str(e)}
 
+# Automatic daily digest scheduler
+import threading
+import time
+from datetime import datetime, time as dt_time
+
+def daily_digest_scheduler():
+    """Run daily digest at 6 AM every day"""
+    while True:
+        now = datetime.now()
+        # Run at 6:00 AM
+        target_time = now.replace(hour=6, minute=0, second=0, microsecond=0)
+        
+        # If it's past 6 AM today, schedule for tomorrow
+        if now.time() > dt_time(6, 0):
+            target_time = target_time.replace(day=target_time.day + 1)
+        
+        # Calculate seconds until target time
+        sleep_seconds = (target_time - now).total_seconds()
+        
+        print(f"📅 Next daily digest scheduled for: {target_time}")
+        time.sleep(sleep_seconds)
+        
+        # Generate daily digest
+        try:
+            print("🕕 Running scheduled daily digest...")
+            generate_daily_digest()
+        except Exception as e:
+            print(f"❌ Scheduled digest error: {str(e)}")
+        
+        # Sleep for 1 hour to avoid running multiple times
+        time.sleep(3600)
+
 if __name__ == "__main__":
     import uvicorn
+    
+    # Start daily digest scheduler in background
+    scheduler_thread = threading.Thread(target=daily_digest_scheduler, daemon=True)
+    scheduler_thread.start()
+    
+    print("🚀 Starting server with automatic daily digest scheduler...")
     uvicorn.run(app, host="0.0.0.0", port=8000)
