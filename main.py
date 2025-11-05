@@ -370,6 +370,105 @@ def delete_heartbeat(record_id: str):
         print(f"❌ Delete Heartbeat error: {str(e)}")
         return {"error": str(e)}
 
+@app.post("/daily-digest")
+def generate_daily_digest():
+    """Generate daily digest summary"""
+    try:
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Get data from all tables
+        sprints_response = requests.get(f"{BASE_URL}/Sprints", headers=headers)
+        cells_response = requests.get(f"{BASE_URL}/Cells", headers=headers)
+        proof_response = requests.get(f"{BASE_URL}/Proof", headers=headers)
+        heartbeats_response = requests.get(f"{BASE_URL}/Heartbeats", headers=headers)
+        
+        sprints = sprints_response.json().get('records', [])
+        cells = cells_response.json().get('records', [])
+        proofs = proof_response.json().get('records', [])
+        heartbeats = heartbeats_response.json().get('records', [])
+        
+        # Calculate metrics
+        total_droplets = len(cells)
+        active_droplets = len([c for c in cells if c.get('fields', {}).get('Health_Status') == 'OK'])
+        uptime_percentage = (active_droplets / total_droplets * 100) if total_droplets > 0 else 0
+        offline_cells = total_droplets - active_droplets
+        
+        total_sprints = len(sprints)
+        completed_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') == 'Done'])
+        in_progress_sprints = len([s for s in sprints if s.get('fields', {}).get('Status') in ['Active', 'Pending']])
+        
+        total_proofs = len(proofs)
+        verified_proofs = len([p for p in proofs if 'passed' in str(p.get('fields', {}).get('Result', '')).lower()])
+        failed_proofs = len([p for p in proofs if 'failed' in str(p.get('fields', {}).get('Result', '')).lower()])
+        pending_proofs = total_proofs - verified_proofs - failed_proofs
+        
+        # Calculate heartbeat averages
+        cpu_values = [h.get('fields', {}).get('CPU_Usage', 0) for h in heartbeats if h.get('fields', {}).get('CPU_Usage')]
+        ram_values = [h.get('fields', {}).get('RAM_Usage', 0) for h in heartbeats if h.get('fields', {}).get('RAM_Usage')]
+        
+        average_cpu = sum(cpu_values) / len(cpu_values) if cpu_values else 0
+        average_ram = sum(ram_values) / len(ram_values) if ram_values else 0
+        
+        # Get last ping time
+        last_ping_time = ""
+        if heartbeats:
+            timestamps = [h.get('createdTime', '') for h in heartbeats]
+            last_ping_time = max(timestamps) if timestamps else ""
+        
+        # Generate warnings
+        offline_cell_ids = [c.get('fields', {}).get('Cell_ID', 'Unknown') for c in cells 
+                           if c.get('fields', {}).get('Health_Status') != 'OK']
+        warnings = f"Offline cells: {', '.join(offline_cell_ids)}" if offline_cell_ids else "All systems operational"
+        
+        # Create digest record
+        digest_data = {
+            "records": [{
+                "fields": {
+                    "Date": today,
+                    "Total_Droplets": total_droplets,
+                    "Active_Droplets": active_droplets,
+                    "Uptime_Percentage": round(uptime_percentage, 2),
+                    "Offline_Cells": offline_cells,
+                    "Total_Sprints": total_sprints,
+                    "Completed_Sprints": completed_sprints,
+                    "In_Progress_Sprints": in_progress_sprints,
+                    "Total_Proofs": total_proofs,
+                    "Verified_Proofs": verified_proofs,
+                    "Failed_Proofs": failed_proofs,
+                    "Pending_Proofs": pending_proofs,
+                    "Average_CPU": round(average_cpu, 2),
+                    "Average_RAM": round(average_ram, 2),
+                    "Last_Ping_Time": last_ping_time,
+                    "Warnings": warnings,
+                    "Timestamp": datetime.now().isoformat()
+                }
+            }]
+        }
+        
+        # Save to Daily_Digest table
+        response = requests.post(f"{BASE_URL}/Daily_Digest", headers=headers, json=digest_data)
+        print(f"📊 Daily digest generated: {response.status_code}")
+        
+        return {
+            "status": response.status_code,
+            "message": "Daily digest generated successfully",
+            "data": response.json(),
+            "summary": {
+                "total_droplets": total_droplets,
+                "active_droplets": active_droplets,
+                "uptime_percentage": f"{uptime_percentage:.2f}%",
+                "total_sprints": total_sprints,
+                "completed_sprints": completed_sprints,
+                "total_proofs": total_proofs,
+                "verified_proofs": verified_proofs
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Daily digest error: {str(e)}")
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
